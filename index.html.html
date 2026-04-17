@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Breakup Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Highlight row animations */
+        tr:hover td { background-color: rgba(249, 250, 251, 0.8); }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen overflow-hidden text-gray-800 flex flex-col items-center justify-center p-2">
+
+    <div class="w-full max-w-5xl flex flex-col gap-2 max-h-full">
+        
+        <header class="text-center shrink-0">
+            <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Welcome to Flipkart!</h1>
+            <p class="text-gray-500 text-[13px] mt-0.5">Compare effect of Flexi PF on your salary!</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-2.5 shrink-0 mx-auto w-full max-w-4xl">
+            <form id="calcForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div>
+                    <label for="tbp" class="block text-[11px] font-semibold text-gray-600 mb-1 uppercase tracking-wide">Total Base Pay (TBP)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-gray-500 font-medium text-sm">₹</span>
+                        <input type="number" id="tbp" required value="360000" class="pl-6 w-full rounded-md border-gray-300 border px-2 py-1 text-[13px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="bonus" class="block text-[11px] font-semibold text-gray-600 mb-1 uppercase tracking-wide">Performance Bonus</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-gray-500 font-medium text-sm">₹</span>
+                        <input type="number" id="bonus" required value="56000" class="pl-6 w-full rounded-md border-gray-300 border px-2 py-1 text-[13px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="state" class="block text-[11px] font-semibold text-gray-600 mb-1 uppercase tracking-wide">Employment State</label>
+                    <select id="state" required class="w-full rounded-md border-gray-300 border px-2 py-1 text-[13px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
+                        </select>
+                </div>
+
+                <div>
+                    <button type="submit" class="bg-gray-900 hover:bg-black text-white font-semibold py-1 px-4 rounded-md shadow-sm transition-all w-full text-[13px] h-[30px]">
+                        Calculate Breakup
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="results" class="hidden w-full fade-in pb-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[13px]">
+                            <th class="bg-gray-100 text-gray-700 px-4 py-1.5 font-bold border-b border-gray-200 w-2/5">
+                                Compensation Component
+                            </th>
+                            <th class="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-1.5 font-bold text-right border-b border-green-600 w-[30%]">
+                                Flexi PF: YES
+                                <span class="text-[9px] font-medium bg-white/20 px-1.5 py-0.5 rounded-full ml-1.5 uppercase tracking-wide">12% Basic</span>
+                            </th>
+                            <th class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-1.5 font-bold text-right border-b border-blue-600 w-[30%]">
+                                Flexi PF: NO
+                                <span class="text-[9px] font-medium bg-white/20 px-1.5 py-0.5 rounded-full ml-1.5 uppercase tracking-wide">Fixed ₹21.6k</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="unified-table-body" class="divide-y divide-gray-100 text-[13px]">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Data: Comprehensive Indian States & Minimum Wages ---
+        const stateData = {
+            "ANDAMAN & NICOBAR": { minBasic: 291408, minHRA: 0, minSpecAllowance: 0 },
+            "ANDHRA PRADESH": { minBasic: 171204, minHRA: 0, minSpecAllowance: 0 },
+            "ARUNACHAL PRADESH": { minBasic: 86400, minHRA: 0, minSpecAllowance: 0 },
+            "ASSAM": { minBasic: 231912, minHRA: 0, minSpecAllowance: 0 },
+            "BIHAR": { minBasic: 205920, minHRA: 0, minSpecAllowance: 0 },
+            "CHANDIGARH": { minBasic: 185628, minHRA: 0, minSpecAllowance: 0 },
+            "CHHATTISGARH": { minBasic: 160632, minHRA: 0, minSpecAllowance: 0 },
+            "DADRA & NAGARA HAVELI": { minBasic: 158340, minHRA: 0, minSpecAllowance: 0 },
+            "DAMAN & DEU": { minBasic: 158340, minHRA: 0, minSpecAllowance: 0 },
+            "DELHI": { minBasic: 292272, minHRA: 0, minSpecAllowance: 0 },
+            "GOA": { minBasic: 207480, minHRA: 0, minSpecAllowance: 0 },
+            "GUJARAT": { minBasic: 163020, minHRA: 0, minSpecAllowance: 0 },
+            "HARYANA": { minBasic: 172680, minHRA: 0, minSpecAllowance: 0 },
+            "HIMACHAL PARDESH": { minBasic: 184680, minHRA: 0, minSpecAllowance: 0 },
+            "JAMMU & KASHMIR": { minBasic: 172224, minHRA: 0, minSpecAllowance: 0 },
+            "JHARKHAND": { minBasic: 249048, minHRA: 0, minSpecAllowance: 0 },
+            "KARNATAKA": { minBasic: 246444, minHRA: 0, minSpecAllowance: 0 },
+            "KERALA": { minBasic: 191520, minHRA: 0, minSpecAllowance: 2400 },
+            "MADHYA PRADESH": { minBasic: 197928, minHRA: 0, minSpecAllowance: 0 },
+            "MAHARASHTRA": { minBasic: 182949, minHRA: 9147.4, minSpecAllowance: 0 },
+            "MANIPUR": { minBasic: 172800, minHRA: 0, minSpecAllowance: 0 },
+            "MEGHALAYA": { minBasic: 207480, minHRA: 0, minSpecAllowance: 0 },
+            "MIZORAM": { minBasic: 227760, minHRA: 0, minSpecAllowance: 0 },
+            "NAGALAND": { minBasic: 84600, minHRA: 0, minSpecAllowance: 0 },
+            "ODISHA": { minBasic: 190944, minHRA: 0, minSpecAllowance: 0 },
+            "PUDUCHERRY": { minBasic: 140340, minHRA: 0, minSpecAllowance: 0 },
+            "PUNJAB": { minBasic: 169188, minHRA: 0, minSpecAllowance: 0 },
+            "RAJASTHAN": { minBasic: 112008, minHRA: 0, minSpecAllowance: 0 },
+            "SIKKIM": { minBasic: 203400, minHRA: 0, minSpecAllowance: 0 },
+            "TAMIL NADU": { minBasic: 176436, minHRA: 0, minSpecAllowance: 0 },
+            "TELANGANA": { minBasic: 175428, minHRA: 0, minSpecAllowance: 0 },
+            "TRIPURA": { minBasic: 116880, minHRA: 0, minSpecAllowance: 0 },
+            "UTTAR PRADESH": { minBasic: 162960, minHRA: 0, minSpecAllowance: 0 },
+            "UTTARAKHAND": { minBasic: 183300, minHRA: 0, minSpecAllowance: 0 },
+            "WEST BENGAL": { minBasic: 164971, minHRA: 8248.6, minSpecAllowance: 0 }
+        };
+
+        // Populate Dropdown
+        const stateSelect = document.getElementById('state');
+        for (const state in stateData) {
+            const option = document.createElement('option');
+            option.value = state;
+            option.textContent = state.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+            if (state === "KARNATAKA") option.selected = true;
+            stateSelect.appendChild(option);
+        }
+
+        // --- 2. Helper Functions ---
+        const formatINR = (value, showDecimals = false) => {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: showDecimals ? 2 : 0,
+                maximumFractionDigits: showDecimals ? 2 : 0
+            }).format(showDecimals ? value : Math.round(value));
+        };
+
+        // Renders a unified row combining Yes and No values. Padding py-1 applied for dense fit.
+        const renderUnifiedRow = (label, valueYes, valueNo, isHighlight = false, showDecimals = false) => {
+            const baseClass = isHighlight ? 'bg-gray-50/80 font-semibold text-gray-900 border-y border-gray-200' : 'bg-white text-gray-600 transition-colors';
+            
+            const textYesClass = isHighlight ? 'text-emerald-700' : 'text-gray-800';
+            const textNoClass = isHighlight ? 'text-indigo-700' : 'text-gray-800';
+
+            return `
+                <tr class="${baseClass}">
+                    <td class="px-4 py-1">${label}</td>
+                    <td class="px-4 py-1 text-right font-medium ${textYesClass} border-l border-gray-100/50">${formatINR(valueYes, showDecimals)}</td>
+                    <td class="px-4 py-1 text-right font-medium ${textNoClass} border-l border-gray-100/50">${formatINR(valueNo, showDecimals)}</td>
+                </tr>
+            `;
+        };
+
+        // --- 3. Core Calculation Logic ---
+        const calculateCompensation = (tbp, bonus, stateName, isFlexiPf) => {
+            const rules = stateData[stateName];
+            
+            const basic = isFlexiPf 
+                ? Math.max(0.45 * (tbp / 1.12), rules.minBasic)
+                : Math.max(0.45 * (tbp - 21600), rules.minBasic);
+
+            const pf = isFlexiPf ? (0.12 * basic) : 21600;
+
+            const ltaFormulaVal = ((tbp - pf) * 0.5) - basic;
+            const lta = ltaFormulaVal >= 24000 ? 24000 : Math.max(0, ltaFormulaVal);
+
+            let personalAllowanceInner;
+            if (((tbp - pf) * 0.5) > 252000) {
+                personalAllowanceInner = Math.max(0, ((tbp - pf) * 0.5) - basic - lta);
+            } else {
+                personalAllowanceInner = 252120 - basic - lta;
+            }
+            const personalAllowance = Math.max(0, rules.minSpecAllowance, personalAllowanceInner);
+
+            const wages = basic + lta + personalAllowance;
+            const esic = wages > 252000 ? 0 : (0.0325 * wages);
+
+            const hraInnerMin = Math.min(tbp - (basic + pf + lta + personalAllowance + esic), wages * 0.5);
+            const hra = Math.max(0, rules.minHRA, hraInnerMin);
+
+            const conveyance = Math.max(0, tbp - (basic + pf + lta + personalAllowance + esic + hra));
+            const remuneration = wages + hra + conveyance;
+            const gratuity = (15 / 26 / 12) * wages;
+            const insurance = 39525;
+            const totalCashCompensation = tbp + bonus;
+            const ctc = totalCashCompensation + gratuity + insurance;
+
+            return {
+                basic, pf, lta, personalAllowance, wages, esic, hra, conveyance, 
+                remuneration, totalBase: basic + pf + lta + personalAllowance + esic + hra + conveyance, 
+                bonus, totalCashCompensation, gratuity, insurance, ctc
+            };
+        };
+
+        // --- 4. Form Handling & Merged Rendering ---
+        document.getElementById('calcForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const tbp = parseFloat(document.getElementById('tbp').value);
+            const bonus = parseFloat(document.getElementById('bonus').value);
+            const state = document.getElementById('state').value;
+
+            // Generate raw data for both sides
+            const resYes = calculateCompensation(tbp, bonus, state, true);
+            const resNo = calculateCompensation(tbp, bonus, state, false);
+
+            // Build unified table rows
+            const html = `
+                ${renderUnifiedRow('Basic Salary', resYes.basic, resNo.basic)}
+                ${renderUnifiedRow('Provident Fund (PF)', resYes.pf, resNo.pf)}
+                ${renderUnifiedRow('Leave Travel Allowance (LTA)', resYes.lta, resNo.lta)}
+                ${renderUnifiedRow('Personal Allowance', resYes.personalAllowance, resNo.personalAllowance)}
+                ${renderUnifiedRow('Wages', resYes.wages, resNo.wages, true)}
+                ${renderUnifiedRow('ESIC', resYes.esic, resNo.esic)}
+                ${renderUnifiedRow('House Rent Allowance (HRA)', resYes.hra, resNo.hra)}
+                ${renderUnifiedRow('Conveyance Allowance', resYes.conveyance, resNo.conveyance)}
+                ${renderUnifiedRow('Remuneration', resYes.remuneration, resNo.remuneration, true)}
+                ${renderUnifiedRow('Total Base Pay', resYes.totalBase, resNo.totalBase, true)}
+                ${renderUnifiedRow('Performance Bonus', resYes.bonus, resNo.bonus)}
+                ${renderUnifiedRow('Total Cash Compensation', resYes.totalCashCompensation, resNo.totalCashCompensation, true)}
+                ${renderUnifiedRow('Gratuity', resYes.gratuity, resNo.gratuity, false, true)}
+                ${renderUnifiedRow('Insurance', resYes.insurance, resNo.insurance)}
+                ${renderUnifiedRow('Cost to Company (CTC)', resYes.ctc, resNo.ctc, true)}
+            `;
+            
+            document.getElementById('unified-table-body').innerHTML = html;
+            document.getElementById('results').classList.remove('hidden');
+        });
+        
+        window.addEventListener('DOMContentLoaded', () => {
+             document.getElementById('calcForm').dispatchEvent(new Event('submit'));
+        });
+    </script>
+</body>
+</html>
